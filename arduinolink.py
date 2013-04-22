@@ -1,11 +1,17 @@
 import serial
 import time
+import datetime
 
-arduino = serial.Serial('/dev/ttyACM0',9600,timeout=1)
 keywords = ('Humidity:','Temperature:','Pressure:','sensor_value:','AirQuality:','Light:')
 measure={}
 ready = 0
 startstr = '---'
+
+try:
+    arduino = serial.Serial('/dev/ttyACM0',9600,timeout=1)
+except:
+    print "COM ERROR"
+    
 while True:
     lines = arduino.readlines()
     if lines.count > 0:
@@ -26,8 +32,11 @@ while True:
                         #print data[0],data[1]
             if startstr in data[0]:
                 ready =1
-                    
-    print measure
+
+    if len(measure) > 1 :
+        measure['Datetime:'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print measure
+        
     time.sleep(30)
     measure = {}
     
