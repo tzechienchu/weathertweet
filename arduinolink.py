@@ -1,11 +1,19 @@
+import sys
 import serial
 import time
 import datetime
+import dbaccess
 
 keywords = ('Humidity:','Temperature:','Pressure:','sensor_value:','AirQuality:','Light:')
 measure={}
 ready = 0
 startstr = '---'
+
+if (sys.argv[1] == 'newdb'):
+    mytweetdb = dbaccess.TWdbaccess("weatherdb.db")
+    mytweetdb.reCreateAllTable()
+else:
+    mytweetdb = dbaccess.TWdbaccess("weatherdb.db")
 
 try:
     arduino = serial.Serial('/dev/ttyACM0',9600,timeout=1)
@@ -35,6 +43,7 @@ while True:
 
     if len(measure) > 1 :
         measure['Datetime:'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mytweetdb.insertMeasurement(measure)
         print measure
         
     time.sleep(30)
