@@ -4,49 +4,95 @@ import time
 import datetime
 import dbaccess
 
-keywords = ('Humidity:','Temperature:','Pressure:','sensor_value:','AirQuality:','Light:')
+
+keywords = ('Temperature:','Humidity:','Pressure:','Light:','AirQuality:')
 measure={}
-ready = 0
 startstr = '---'
 
+def readWeatherBox():
+    global ready
+    lines = arduino.readlines()
+    measure = {}
+    if lines.count > 0:
+        for line in lines:
+            data = line.split(' ')
+            if (len(data) > 1) :
+                #print line
+                if (data[0] in keywords):
+                    data[1] = data[1].strip()
+                    if '.' in data[1]:
+                        measure[data[0]]= float(data[1])
+                    else:
+                        measure[data[0]]= int(data[1])
+                    #measure[data[0]]=data[1].strip()
+                    #print data[0],data[1]
+
+    if len(measure) > 1 :
+        nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mytweetdb.insertMeasurement(measure)
+        print nowstr,measure
+
+def calAvg30():
+    sumlist = [0.0,0.0,0,0,0]
+    allmeas = mytweetdb.getLast30Measurment()
+    dataleng = len(allmeas)
+    fromidx = allmeas[0][0]
+    toidx = allmeas[dataleng][0]
+    
+    for meas in allmeas:
+        print meas
+        sumlist[0] += meas[2]
+        sumlist[1] += meas[3]
+        sumlist[2] += meas[4]
+        sumlist[3] += meas[5]
+        sumlist[4] += meas[6]
+    #print sumlist
+    measure = {}
+    for ix in range(5):
+        sumlist[ix] = sumlist[ix]/dataleng
+        if ix == 0:
+            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
+            continue
+        if ix == 1:
+            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
+        else:
+            measure[keywords[ix]]=int(sumlist[ix])
+
+    mytweetdb.insertAverage(measure,fromidx,toidx)      
+    nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    mytweetdb.insertDiary(nowstr,'A30')
+    print nowstr,fromidx,toidx
+    print measure
+
+#If no argument ???
 if (sys.argv[1] == 'newdb'):
-    mytweetdb = dbaccess.TWdbaccess("weatherdb.db")
+    mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
     mytweetdb.reCreateAllTable()
 else:
-    mytweetdb = dbaccess.TWdbaccess("weatherdb.db")
+    mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
+    
+nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+mytweetdb.insertDiary(nowstr,'Startup')
 
 try:
     arduino = serial.Serial('/dev/ttyACM0',9600,timeout=1)
 except:
     print "COM ERROR"
-    
-while True:
-    lines = arduino.readlines()
-    if lines.count > 0:
-        for line in lines:
-            if ready == 0:
-                print line
-            data = line.split(' ')
-            if ready == 1:
-                if (len(data) > 1) :
-                    #print line
-                    if (data[0] in keywords):
-                        data[1] = data[1].strip()
-                        if '.' in data[1]:
-                            measure[data[0]]= float(data[1])
-                        else:
-                            measure[data[0]]= int(data[1])
-                        #measure[data[0]]=data[1].strip()
-                        #print data[0],data[1]
-            if startstr in data[0]:
-                ready =1
 
-    if len(measure) > 1 :
-        measure['Datetime:'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        mytweetdb.insertMeasurement(measure)
-        print measure
+#Startup Check Last Average
+count = 0
+while True:
+    readWeatherBox()
+    print count
+    time.sleep(60)
+    count += 1
+    if count > 30:
+        calAvg30()      
+        count = 0
+       
         
-    time.sleep(30)
-    measure = {}
+    
+    
+
     
     
