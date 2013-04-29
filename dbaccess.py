@@ -111,7 +111,7 @@ class WTdbaccess:
             print col_name
             for row in rows:
                 print row
-            print col_name
+            print col_name         
                       
             
     def getLast30Measurment(self):
@@ -120,6 +120,20 @@ class WTdbaccess:
             rows = self.cur.fetchall()
             return rows
 
+    def getLastMeasurment(self):
+        with self.con:
+            self.cur.execute("SELECT * FROM Measurment ORDER BY Id DESC LIMIT 1")
+            rows = self.cur.fetchall()
+            return rows
+
+    def getMeasurment(self,fromidx,toidx):
+        if (fromidx > toidx) :
+            return ()
+        with self.con:
+            self.cur.execute("SELECT * FROM Measurment WHERE Id >= ? AND Id <= ? ORDER BY Id DESC",(fromidx,toidx))
+            rows = self.cur.fetchall()
+            return rows        
+        
     def printLast30Average(self):
         with self.con:
             self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 30")
@@ -136,6 +150,12 @@ class WTdbaccess:
             rows = self.cur.fetchall()
             return rows
         
+    def getLastAverage(self):
+        with self.con:
+            self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 1")
+            rows = self.cur.fetchall()
+            return rows        
+        
     def printLast30Diary(self):
         with self.con:
             self.cur.execute("SELECT * FROM Diary ORDER BY Id DESC LIMIT 30")
@@ -148,7 +168,8 @@ class WTdbaccess:
 
 if __name__ == "__main__":
     mytweetdb = WTdbaccess("weatherdb.db")
-
+    
+    '''
     mytweetdb.reCreateAllTable()
     meas = {'Humidity:': 58.4, 'sensor_value:': 461, 'Light:': 33899, 'AirQuality:': 11, 'Pressure:': 101194, 'Temperature:': 26.7}
     mytweetdb.insertMeasurement(meas)
@@ -160,10 +181,12 @@ if __name__ == "__main__":
     mytweetdb.insertMeasurement(meas)    
     mytweetdb.insertDiary('2013-04-26 10:00:15','Average30')
     mytweetdb.insertAverage(meas,1,20) 
+    '''
 
-    mytweetdb.printLast30Measurment()
-    mytweetdb.printLast30Diary()
-    mytweetdb.printLast30Average()
+    #mytweetdb.printLast30Measurment()
+    #mytweetdb.printLast30Diary()
+    #mytweetdb.printLast30Average()
+    print mytweetdb.getMeasurment(0,5)
 
     
     

@@ -37,18 +37,20 @@ def calAvg30():
     allmeas = mytweetdb.getLast30Measurment()
     dataleng = len(allmeas)
     fromidx = allmeas[0][0]
-    toidx = allmeas[dataleng][0]
+    toidx = allmeas[dataleng-1][0]
+    print fromidx,toidx
     
     for meas in allmeas:
         print meas
-        sumlist[0] += meas[2]
-        sumlist[1] += meas[3]
-        sumlist[2] += meas[4]
-        sumlist[3] += meas[5]
-        sumlist[4] += meas[6]
+        sumlist[0] += meas[1]
+        sumlist[1] += meas[2]
+        sumlist[2] += meas[3]
+        sumlist[3] += meas[4]
+        sumlist[4] += meas[5]
     #print sumlist
     measure = {}
     for ix in range(5):
+        print ix,sumlist[ix]
         sumlist[ix] = sumlist[ix]/dataleng
         if ix == 0:
             measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
@@ -64,13 +66,31 @@ def calAvg30():
     print nowstr,fromidx,toidx
     print measure
 
-#If no argument ???
-if (sys.argv[1] == 'newdb'):
-    mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
-    mytweetdb.reCreateAllTable()
+def checkPreviousAvg():
+    lastavg = mytweetdb.getLastAverage()
+    lastmeas = mytweetdb.getLastMeasurment()
+    lastid = lastmeas[0][0]
+    if (len(lastavg) == 1):
+        fromindx = lastavg[0][0]
+        toindx = lastavg[0][1]
+        if (lastid == toindx):
+            pass
+        else:
+            print fromindx,toindx,lastid
+            calAvg30()
+    else:
+        print "No Average"
+        calAvg30()
+
+if (len(sys.argv) > 1):        
+    if (sys.argv[1] == 'newdb'):
+        mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
+        mytweetdb.reCreateAllTable()
 else:
     mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
-    
+
+checkPreviousAvg()    
+
 nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 mytweetdb.insertDiary(nowstr,'Startup')
 
@@ -85,8 +105,8 @@ while True:
     readWeatherBox()
     print count
     time.sleep(60)
-    count += 1
-    if count > 30:
+    calAvg30()
+    if count >= 30:
         calAvg30()      
         count = 0
        
