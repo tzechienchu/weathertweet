@@ -32,10 +32,11 @@ def readWeatherBox():
         mytweetdb.insertMeasurement(measure)
         print nowstr,measure
 
-def calAvg30():
+def calAvg(fromidx,toidx):
     sumlist = [0.0,0.0,0,0,0]
-    allmeas = mytweetdb.getLast30Measurment()
+    allmeas = mytweetdb.getMeasurment(fromidx,toidx)
     dataleng = len(allmeas)
+    
     fromidx = allmeas[0][0]
     toidx = allmeas[dataleng-1][0]
     print fromidx,toidx
@@ -65,6 +66,40 @@ def calAvg30():
     mytweetdb.insertDiary(nowstr,'A30')
     print nowstr,fromidx,toidx
     print measure
+    
+def calAvg60():
+    sumlist = [0.0,0.0,0,0,0]
+    allmeas = mytweetdb.getLast60Measurment()
+    dataleng = len(allmeas)
+    fromidx = allmeas[0][0]
+    toidx = allmeas[dataleng-1][0]
+    print fromidx,toidx
+    
+    for meas in allmeas:
+        print meas
+        sumlist[0] += meas[1]
+        sumlist[1] += meas[2]
+        sumlist[2] += meas[3]
+        sumlist[3] += meas[4]
+        sumlist[4] += meas[5]
+    #print sumlist
+    measure = {}
+    for ix in range(5):
+        print ix,sumlist[ix]
+        sumlist[ix] = sumlist[ix]/dataleng
+        if ix == 0:
+            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
+            continue
+        if ix == 1:
+            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
+        else:
+            measure[keywords[ix]]=int(sumlist[ix])
+
+    mytweetdb.insertAverage(measure,fromidx,toidx)      
+    nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    mytweetdb.insertDiary(nowstr,'A60')
+    print nowstr,fromidx,toidx
+    print measure
 
 def checkPreviousAvg():
     lastavg = mytweetdb.getLastAverage()
@@ -77,10 +112,10 @@ def checkPreviousAvg():
             pass
         else:
             print fromindx,toindx,lastid
-            calAvg30()
+            calAvg60()
     else:
         print "No Average"
-        calAvg30()
+        calAvg60()
 
 if (len(sys.argv) > 1):        
     if (sys.argv[1] == 'newdb'):
@@ -88,8 +123,7 @@ if (len(sys.argv) > 1):
         mytweetdb.reCreateAllTable()
 else:
     mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
-
-checkPreviousAvg()    
+    checkPreviousAvg() 
 
 nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 mytweetdb.insertDiary(nowstr,'Startup')
@@ -105,9 +139,9 @@ while True:
     readWeatherBox()
     print count
     time.sleep(60)
-    calAvg30()
-    if count >= 30:
-        calAvg30()      
+    count += 1
+    if count > 30:
+        calAvg60()      
         count = 0
        
         

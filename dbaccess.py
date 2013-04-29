@@ -103,9 +103,9 @@ class WTdbaccess:
         with self.con:
             self.cur.execute("INSERT INTO Average (FromIdx,ToIdx,Temperature,Humidity,Pressure,Light,AirQty) values (?,?,?,?,?,?,?)",(fromidx,toidx,temp,hum,press,light,air))
 
-    def printLast30Measurment(self):
+    def printLast60Measurment(self):
         with self.con:
-            self.cur.execute("SELECT * FROM Measurment ORDER BY Id DESC LIMIT 30")
+            self.cur.execute("SELECT * FROM Measurment ORDER BY Id DESC LIMIT 60")
             col_name = [tuple[0] for tuple in self.cur.description]
             rows = self.cur.fetchall()
             print col_name
@@ -114,9 +114,9 @@ class WTdbaccess:
             print col_name         
                       
             
-    def getLast30Measurment(self):
+    def getLast60Measurment(self):
         with self.con:
-            self.cur.execute("SELECT * FROM Measurment ORDER BY Id DESC LIMIT 30")
+            self.cur.execute("SELECT * FROM Measurment ORDER BY Id DESC LIMIT 60")
             rows = self.cur.fetchall()
             return rows
 
@@ -134,9 +134,9 @@ class WTdbaccess:
             rows = self.cur.fetchall()
             return rows        
         
-    def printLast30Average(self):
+    def printLast24Average(self):
         with self.con:
-            self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 30")
+            self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 2")
             col_name = [tuple[0] for tuple in self.cur.description]
             rows = self.cur.fetchall()
             print col_name
@@ -144,9 +144,9 @@ class WTdbaccess:
                 print row
             print col_name
             
-    def getLast30Average(self):
+    def getLast24Average(self):
         with self.con:
-            self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 30")
+            self.cur.execute("SELECT * FROM Average ORDER BY Id DESC LIMIT 24")
             rows = self.cur.fetchall()
             return rows
         
@@ -183,10 +183,10 @@ if __name__ == "__main__":
     mytweetdb.insertAverage(meas,1,20) 
     '''
 
-    #mytweetdb.printLast30Measurment()
-    #mytweetdb.printLast30Diary()
-    #mytweetdb.printLast30Average()
-    print mytweetdb.getMeasurment(0,5)
+    mytweetdb.printLast60Measurment()
+    mytweetdb.printLast30Diary()
+    mytweetdb.printLast24Average()
+    #mytweetdb.getMeasurment(0,5)
 
     
     
