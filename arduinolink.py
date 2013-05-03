@@ -3,7 +3,7 @@ import serial
 import time
 import datetime
 import dbaccess
-
+import math
 
 keywords = ('Temperature:','Humidity:','Pressure:','Light:','AirQuality:')
 measure={}
@@ -32,22 +32,27 @@ def readWeatherBox():
         mytweetdb.insertMeasurement(measure)
         print nowstr,measure
 
-def calAvg(fromidx,toidx):
+def statistics(allmeas):
     sumlist = [0.0,0.0,0,0,0]
-    allmeas = mytweetdb.getMeasurment(fromidx,toidx)
+    maxlist = [0.0,0.0,0,0,0]
+    minlist = [1000.0,1000.0,999999,999999,999999]
+    varlist = [0.0,0.0,0,0,0]
+
     dataleng = len(allmeas)
-    
     fromidx = allmeas[0][0]
     toidx = allmeas[dataleng-1][0]
     print fromidx,toidx
     
     for meas in allmeas:
-        print meas
-        sumlist[0] += meas[1]
-        sumlist[1] += meas[2]
-        sumlist[2] += meas[3]
-        sumlist[3] += meas[4]
-        sumlist[4] += meas[5]
+        #print meas
+        for ix in range(5):
+            sumlist[ix] += meas[ix+1]
+            if (maxlist[ix] < meas[ix+1]):
+                maxlist[ix] = meas[ix+1]
+            if (minlist[ix] > meas[ix+1]):
+                minlist[ix] = meas[ix+1]
+
+            
     #print sumlist
     measure = {}
     for ix in range(5):
@@ -60,46 +65,61 @@ def calAvg(fromidx,toidx):
             measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
         else:
             measure[keywords[ix]]=int(sumlist[ix])
+            
+    #cal Dev
+    for meas in allmeas:
+        for ix in range(5):
+            varlist[ix] += ((meas[ix+1]-sumlist[ix])*(meas[ix+1]-sumlist[ix]))
+        for ix in range(5):
+            varlist[ix] = varlist[ix]/dataleng
+            varlist[ix] = math.sqrt(varlist[ix])
+            varlist[ix] = int(varlist[ix]*1000)/1000.0
 
-    mytweetdb.insertAverage(measure,fromidx,toidx)      
+    measuremin = {}
+    measuremax = {}
+    measurevar = {}
+    for ix in range(5):
+        measuremin[keywords[ix]]= minlist[ix]
+        measuremax[keywords[ix]]= maxlist[ix]
+        measurevar[keywords[ix]]= varlist[ix]
+
+    return (measure,measuremin,measuremax,measurevar,fromidx,toidx)
+            
+def calAvg(fromidx,toidx):
+    allmeas = mytweetdb.getMeasurment(fromidx,toidx)
+    
+    (measure,measuremin,measuremax,measurevar,fromidx,toidx) = statistics(allmeas)
+
+    mytweetdb.insertAverage(measure,fromidx,toidx)
+    mytweetdb.insertMax(measuremax,fromidx,toidx)
+    mytweetdb.insertMin(measuremin,fromidx,toidx)
+    mytweetdb.insertDeviation(measurevar,fromidx,toidx)
+    
     nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     mytweetdb.insertDiary(nowstr,'A30')
     print nowstr,fromidx,toidx
     print measure
+    print measuremax
+    print measuremin
+    print measurevar
     
 def calAvg60():
-    sumlist = [0.0,0.0,0,0,0]
-    allmeas = mytweetdb.getLast60Measurment()
-    dataleng = len(allmeas)
-    fromidx = allmeas[0][0]
-    toidx = allmeas[dataleng-1][0]
-    print fromidx,toidx
-    
-    for meas in allmeas:
-        print meas
-        sumlist[0] += meas[1]
-        sumlist[1] += meas[2]
-        sumlist[2] += meas[3]
-        sumlist[3] += meas[4]
-        sumlist[4] += meas[5]
-    #print sumlist
-    measure = {}
-    for ix in range(5):
-        print ix,sumlist[ix]
-        sumlist[ix] = sumlist[ix]/dataleng
-        if ix == 0:
-            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
-            continue
-        if ix == 1:
-            measure[keywords[ix]]=int(sumlist[ix]*10)/10.0
-        else:
-            measure[keywords[ix]]=int(sumlist[ix])
 
-    mytweetdb.insertAverage(measure,fromidx,toidx)      
+    allmeas = mytweetdb.getLast60Measurment()
+    (measure,measuremin,measuremax,measurevar,fromidx,toidx) = statistics(allmeas)
+                
+    mytweetdb.insertAverage(measure,fromidx,toidx)
+    mytweetdb.insertMax(measuremax,fromidx,toidx)
+    mytweetdb.insertMin(measuremin,fromidx,toidx)
+    mytweetdb.insertDeviation(measurevar,fromidx,toidx)
+    
     nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     mytweetdb.insertDiary(nowstr,'A60')
     print nowstr,fromidx,toidx
     print measure
+    print measuremax
+    print measuremin
+    print measurevar    
 
 def checkPreviousAvg():
     lastavg = mytweetdb.getLastAverage()
@@ -124,6 +144,8 @@ if (len(sys.argv) > 1):
 else:
     mytweetdb = dbaccess.WTdbaccess("weatherdb.db")
     checkPreviousAvg() 
+
+#calAvg60()
 
 nowstr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 mytweetdb.insertDiary(nowstr,'Startup')
