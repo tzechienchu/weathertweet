@@ -226,7 +226,7 @@ if __name__ == "__main__":
     '''
     
     mytweetdb.printLast60Measurment()
-    #mytweetdb.printLast30Diary()
+    mytweetdb.printLast30Diary()
     mytweetdb.printLast24Average()
     print mytweetdb.getLastMax()
     print mytweetdb.getLastMin()
